@@ -459,7 +459,7 @@ pub static GROUPS: &[Group] = &[
 ];
 
 pub static EASY_TITLES: &[&str] = &[
-    "Warm-up Lap", "A Freebie", "Even Your Nan Knows This", "Gimme", "Confidence Builder",
+    "Warm-up Lap", "A Freebie", "Everyone Knows This One", "Gimme", "Confidence Builder",
     "Don't Overthink It", "Free Points (Probably)", "Training Wheels", "Baby Steps",
     "Stretch Those Fingers", "Easy Peasy", "One For the Kids", "Get Your Eye In",
     "Just Vibes", "Ease On In", "Practice Swing", "Low Stakes", "Look, No Hands",
