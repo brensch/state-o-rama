@@ -14,7 +14,8 @@ function bot(name, token, { host = false, wrong = false, slow = 0 } = {}) {
       const m = JSON.parse(e.data);
       if (m.t === "welcome") me = m.you;
       if (m.t !== "state") return;
-      if (host && m.phase === "lobby" && m.players.filter((p) => p.online).length >= 3 && !started) {
+      // whoever the server made host starts (connections can arrive in any order)
+      if (m.host === me && m.phase === "lobby" && m.players.filter((p) => p.online).length >= 3 && !started) {
         started = true; ws.send(JSON.stringify({ t: "start", rounds }));
       }
       if (m.phase === "question" && !answered.has(m.round)) {
