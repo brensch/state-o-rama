@@ -65,6 +65,15 @@ input:focus { box-shadow: 0 0 0 4px #ffd23f99; }
 .small-print { font-size: 13px; color: var(--muted); }
 
 /* lobby */
+.lobby-top { display: flex; gap: 12px; width: 100%; align-items: stretch; }
+.lobby-top > .card { justify-content: space-between; }
+.lobby-top > .card { flex: 1; min-width: 0; padding: 14px 12px; }
+.lobby-top .code { font-size: clamp(28px, 9vw, 44px); letter-spacing: clamp(2px, 1vw, 6px); }
+.lobby-top button { white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+.you-name {
+  font-size: clamp(18px, 5.5vw, 26px); font-weight: 700; max-width: 100%; line-height: 1.6;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .code { font-size: 44px; font-weight: 900; letter-spacing: 6px; color: var(--teal); text-shadow: 2px 2px 0 var(--line); }
 .players { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .chip {

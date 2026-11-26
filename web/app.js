@@ -127,12 +127,16 @@ function drawLobby(s) {
   $app.innerHTML = `
     <div class="center">
       <h1 class="logo">State&#8209;o&#8209;rama</h1>
-      <div class="card center">
-        <div class="muted">Lobby code</div>
-        <div class="code">${esc(s.code)}</div>
-        <div class="row">
-          <button class="ghost small" id="share">📤 Share</button>
-          <button class="ghost small" id="rename">Change name</button>
+      <div class="lobby-top">
+        <div class="card center">
+          <div class="muted">Lobby code</div>
+          <div class="code">${esc(s.code)}</div>
+          <button class="ghost small" id="share" style="width:100%">📤 Share</button>
+        </div>
+        <div class="card center you">
+          <div class="muted">You</div>
+          <div class="you-name">${esc(meP(s)?.name ?? store.get("sor-name") ?? "")}</div>
+          <button class="ghost small" id="rename" style="width:100%">Change name</button>
         </div>
       </div>
       <div class="card center">
