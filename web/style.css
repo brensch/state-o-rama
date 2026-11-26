@@ -135,3 +135,13 @@ input:focus { box-shadow: 0 0 0 4px #ffd23f99; }
 @keyframes pop { from { transform: scale(.9); opacity: 0; } }
 @keyframes wobble { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 .wobble { animation: wobble 2s ease-in-out infinite; display: inline-block; }
+
+/* share sheet (when the browser has no native one) */
+#sheet {
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
+  background: #1d234066; padding: 16px;
+}
+#sheet .sheet { max-width: 360px; gap: 10px; }
+#sheet .qr { border: 3px solid var(--line); border-radius: 12px; width: 220px; height: 220px; background: #fff; }
+#sheet input { font-size: 14px; text-align: center; }
+#sheet .row .btn { flex: 1; text-align: center; padding: 10px 6px; font-size: 14px; }

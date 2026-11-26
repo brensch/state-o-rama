@@ -131,7 +131,7 @@ function drawLobby(s) {
         <div class="muted">Lobby code</div>
         <div class="code">${esc(s.code)}</div>
         <div class="row">
-          <button class="ghost small" id="share">${navigator.share ? "Share link" : "Copy link"}</button>
+          <button class="ghost small" id="share">📤 Share</button>
           <button class="ghost small" id="rename">Change name</button>
         </div>
       </div>
@@ -148,14 +148,50 @@ function drawLobby(s) {
       <p class="small-print">Pick the state from its shape. Faster answers score more. Easy ones first, then the look-alikes.
       There's always an Aussie option. Don't trust it. Or do. 🦘</p>
     </div>`;
-  document.getElementById("share").onclick = async (e) => {
-    if (navigator.share) { try { await navigator.share({ title: "State-o-rama", text: "Guess the states. Lose to me.", url: link }); } catch {} return; }
-    try { await navigator.clipboard.writeText(link); e.target.textContent = "Copied!"; } catch { prompt("Copy this link", link); }
-  };
+  document.getElementById("share").onclick = () => share(s.code, link);
   document.getElementById("rename").onclick = () => nameScreen(true);
   document.querySelectorAll("[data-r]").forEach((b) => (b.onclick = () => { G.rounds = +b.dataset.r; drawLobby(s); }));
   const $start = document.getElementById("start");
   if ($start) $start.onclick = () => send({ t: "start", rounds });
+}
+
+// The phone's own share sheet where there is one; otherwise ours (QR, copy, apps).
+// Ours lives outside #app so lobby updates don't close it.
+async function share(code, link) {
+  const text = "Guess the states. Lose to me. 🦘";
+  if (navigator.share) {
+    try { await navigator.share({ title: "State-o-rama", text, url: link }); return; }
+    catch (e) { if (e.name === "AbortError") return; }
+  }
+  document.getElementById("sheet")?.remove();
+  const enc = encodeURIComponent, msg = enc(`${text} ${link}`);
+  const el = document.createElement("div");
+  el.id = "sheet";
+  el.innerHTML = `
+    <div class="sheet card center toast">
+      <h3>Get them in here</h3>
+      <img class="qr" src="/qr/${enc(code)}" alt="QR code for the lobby link" width="220" height="220">
+      <div class="small-print">Point a phone camera at it</div>
+      <input id="link" readonly value="${esc(link)}">
+      <button class="primary" id="copy" style="width:100%">Copy link</button>
+      <div class="row">
+        <a class="btn small" target="_blank" rel="noopener" href="https://wa.me/?text=${msg}">WhatsApp</a>
+        <a class="btn small" href="sms:?&body=${msg}">SMS</a>
+        <a class="btn small" href="mailto:?subject=${enc("State-o-rama?")}&body=${msg}">Email</a>
+      </div>
+      <button class="ghost small" id="close">Close</button>
+    </div>`;
+  document.body.append(el);
+  const close = () => el.remove();
+  el.onclick = (e) => { if (e.target === el) close(); };
+  el.querySelector("#close").onclick = close;
+  el.querySelector("#link").onfocus = (e) => e.target.select();
+  el.querySelector("#copy").onclick = async (e) => {
+    try { await navigator.clipboard.writeText(link); }
+    catch { const i = el.querySelector("#link"); i.focus(); i.select(); document.execCommand("copy"); }
+    e.target.textContent = "Copied! 📋";
+    setTimeout(() => (e.target.textContent = "Copy link"), 1800);
+  };
 }
 
 function shapeSvg(q, rotate) {

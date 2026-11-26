@@ -35,6 +35,7 @@ async fn main() {
         .route("/style.css", get(|| async { asset("text/css", STYLE) }))
         .route("/maps.json", get(|| async { asset("application/json", MAPS) }))
         .route("/icon.svg", get(|| async { asset("image/svg+xml", ICON) }))
+        .route("/qr/{code}", get(qr))
         .route("/healthz", get(|| async { "ok" }))
         .route("/ws/{code}", get(ws))
         .with_state(reg);
@@ -65,6 +66,17 @@ async fn lobby_page(Path(code): Path<String>) -> Response {
         Some(c) => Redirect::to(&format!("/l/{c}")).into_response(),
         None => Redirect::to("/").into_response(),
     }
+}
+
+/// The lobby's link as a QR code, for a room full of phones.
+async fn qr(Path(code): Path<String>, headers: axum::http::HeaderMap) -> Response {
+    let Some(code) = valid_code(&code) else { return StatusCode::NOT_FOUND.into_response() };
+    let host = headers.get(header::HOST).and_then(|h| h.to_str().ok()).unwrap_or("state-o-rama.brensch.com");
+    let scheme = if host.starts_with("127.") || host.starts_with("localhost") { "http" } else { "https" };
+    let Ok(q) = qrcode::QrCode::new(format!("{scheme}://{host}/l/{code}")) else { return StatusCode::BAD_REQUEST.into_response() };
+    let svg = q.render::<qrcode::render::svg::Color>().quiet_zone(true).min_dimensions(240, 240)
+        .dark_color(qrcode::render::svg::Color("#1d2340")).light_color(qrcode::render::svg::Color("#ffffff")).build();
+    ([(header::CONTENT_TYPE, "image/svg+xml"), (header::CACHE_CONTROL, "public, max-age=86400")], svg).into_response()
 }
 
 /// A fresh lobby code: pronounceable, and not one that's in use.
