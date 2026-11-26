@@ -215,7 +215,7 @@ function drawQuestion(s) {
   $app.innerHTML = `
     ${header(s)}
     <div class="timer" id="timer"><div></div></div>
-    <div class="shape" id="shape">${shapeSvg(q, 0)}</div>
+    <div class="shape mod-${q.modifier}" id="shape">${shapeSvg(q, 0)}</div>
     <div class="options">${q.options.map((o) => `<button data-id="${o.id}"><span class="flag">${flag(o.id)}</span>${esc(o.name)}</button>`).join("")}</div>
     <div class="status" id="status"></div>
     <div class="players" id="chips" style="margin-top:10px"></div>`;
@@ -258,9 +258,10 @@ function drawReveal(s) {
   const pickers = (id) => s.players.filter((p) => p.pick === id).map((p) => esc(p.name)).join(", ");
   const ranked = [...s.players].sort((a, b) => b.score - a.score);
   const map = G.maps?.[r.answer.slice(0, 2)];
-  const heading = !mine ? ["Too slow!", "Asleep?", "No answer, no glory."][s.round % 3]
-    : right ? ["Nailed it!", "Correct!", "Big brain!", "Yes!!"][s.round % 4]
-    : ["Nope!", "Oof.", "Not quite.", "Wrong, but confidently."][s.round % 4];
+  const any = (xs) => xs[Math.floor(Math.random() * xs.length)];
+  const heading = !mine ? any(["Too slow!", "Asleep?", "No answer, no glory.", "Hello? Anyone home?", "The clock won.", "Ghosted the question."])
+    : right ? any(["Nailed it!", "Correct!", "Big brain!", "Yes!!", "Get in!", "Easy. (Was it?)", "Chef's kiss.", "Too good.", "Geography legend."])
+    : any(["Nope!", "Oof.", "Not quite.", "Wrong, but confidently.", "Swing and a miss.", "Yikes.", "So close. Or not.", "Have you seen a map?", "Bold. Wrong, but bold."]);
   $app.innerHTML = `
     ${header(s)}
     <div class="title" style="font-size:24px;color:${right ? "var(--green)" : "var(--red)"}">${heading}${right && me?.gained ? ` +${me.gained}` : ""}</div>
@@ -312,6 +313,11 @@ function drawOver(s) {
   const s = G.snap;
   if (s?.phase === "question") {
     const left = Math.max(0, s.q.deadline - now());
+    // fog clears over the first 20 seconds
+    if (s.q.modifier === "fog") {
+      const $svg = document.querySelector("#shape svg");
+      if ($svg) $svg.style.filter = `blur(${Math.max(0, 18 * (1 - (30000 - left) / 20000)).toFixed(1)}px)`;
+    }
     const $t = document.getElementById("timer");
     if ($t) {
       $t.firstElementChild.style.transform = `scaleX(${left / 30000})`;

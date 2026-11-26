@@ -15,5 +15,8 @@
     "topojson-server": "^3.0.1",
     "topojson-simplify": "^3.0.3",
     "us-atlas": "^3.0.1"
+  },
+  "devDependencies": {
+    "@fontsource-variable/fredoka": "^5.3.0"
   }
 }

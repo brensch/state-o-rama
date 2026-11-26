@@ -65,7 +65,7 @@ struct Player {
 enum Phase {
     Lobby,
     Question { started: Instant, deadline: Instant },
-    Reveal { until: Instant, quips: Vec<String> },
+    Reveal { until: Instant, quips: Vec<String>, roast: &'static str },
     Over { winner: String, loser: Option<String> },
 }
 
@@ -323,7 +323,8 @@ impl Lobby {
             facts.new_leader = self.players.iter().find(|(_, p)| Some(p.id) == leader_after).map(|(_, p)| p.name.clone());
         }
         let quips = quiz::quips(&facts);
-        self.phase = Phase::Reveal { until: Instant::now() + Duration::from_secs(REVEAL_SECS), quips };
+        let roast = quiz::roast(q.answer);
+        self.phase = Phase::Reveal { until: Instant::now() + Duration::from_secs(REVEAL_SECS), quips, roast };
     }
 
     /// sole leader with points, if there is one
@@ -381,15 +382,13 @@ impl Lobby {
                 q["deadline"] = json!(wall(*deadline));
                 snap["q"] = q;
             }
-            Phase::Reveal { until, quips } => {
+            Phase::Reveal { until, quips, roast } => {
                 let q = &self.questions[self.round];
                 snap["phase"] = json!("reveal");
                 snap["q"] = question(q);
-                let roasts = q.answer.roasts;
                 snap["reveal"] = json!({
                     "answer": q.answer.id, "name": q.answer.name,
-                    // stable per round so every screen shows the same roast
-                    "roast": roasts[(self.round + self.games_played as usize) % roasts.len()],
+                    "roast": roast,
                     "quips": quips, "until": wall(*until),
                     "last": self.round + 1 == self.questions.len(),
                 });

@@ -3,7 +3,7 @@
 #   make build     static (musl) release binary, so the box's glibc doesn't matter
 #   make deploy    build, copy to the box, restart the service
 #   make setup-vm  one-time box setup (user, systemd unit, Caddy site)
-#   make shapes    regenerate shapes/ and web/*.json from the map data
+#   make shapes    regenerate shapes/, web/shapes.json, maps.json and similar.json
 VM ?= schlift-gcp
 TARGET = x86_64-unknown-linux-musl
 BIN = target/$(TARGET)/release/state-o-rama
@@ -26,4 +26,4 @@ setup-vm:
 shapes:
 	cd tools && npm ci && mkdir -p data && \
 	  ([ -f data/ne_admin1.geojson ] || curl -fsSL -o data/ne_admin1.geojson https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson) && \
-	  node gen-shapes.mjs
+	  node gen-shapes.mjs && node similarity.mjs

@@ -7,6 +7,21 @@ use rand::seq::{IndexedRandom, SliceRandom};
 use rand::RngExt;
 use std::collections::HashSet;
 
+pub use crate::content::{GROUPS, STATES};
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+/// Measured shape similarity (tools/similarity.mjs): for each state, every
+/// other state with a 0..1 overlap score, most similar first.
+static SIMILAR: LazyLock<HashMap<String, Vec<(String, f64)>>> =
+    LazyLock::new(|| serde_json::from_str(include_str!("../web/similar.json")).expect("similar.json"));
+
+/// Other states, most similar-looking first.
+pub fn similar(id: &str) -> Vec<(&'static State, f64)> {
+    SIMILAR[id].iter().map(|(o, s)| (by_id(o), *s)).collect()
+}
+use crate::content as c;
+
 pub struct State {
     pub id: &'static str,
     pub name: &'static str,
@@ -21,124 +36,11 @@ impl State {
     }
 }
 
-macro_rules! states {
-    ($($id:literal, $name:literal, $tier:literal, [$($r:literal),+ $(,)?];)*) => {
-        pub static STATES: &[State] = &[$(State { id: $id, name: $name, tier: $tier, roasts: &[$($r),+] }),*];
-    };
-}
-
-states! {
-    "US-AL", "Alabama", 3, ["Not Mississippi. Turn it around and it's Mississippi. Don't turn it around.", "Has a tiny little foot dipped in the Gulf, like it's testing the water."];
-    "US-AK", "Alaska", 1, ["So big they shrink it on every map out of politeness.", "Comes with a free spray of islands. Some assembly required."];
-    "US-AZ", "Arizona", 3, ["A rectangle that lost a fight with a river.", "The Grand Canyon's landlord."];
-    "US-AR", "Arkansas", 3, ["Missouri's shorter sibling with a messier right side.", "Pronounced like Kansas, absolutely not like Kansas."];
-    "US-CA", "California", 1, ["A state shaped like it's leaning in for a hug from Nevada.", "Basically a country with a coastline problem."];
-    "US-CO", "Colorado", 3, ["Technically a hexacontagon: 697 sides, all pretending to be four.", "If you said Wyoming, you're in great company and still wrong."];
-    "US-CT", "Connecticut", 3, ["A rectangle with a little tail, like it's waving goodbye to New York.", "The state equivalent of beige paint."];
-    "US-DE", "Delaware", 3, ["A state so small the outline is mostly coastline anxiety.", "That curved top border is a literal circle. Look it up."];
-    "US-FL", "Florida", 1, ["The only state everyone can draw, and it's still weird.", "America's thumbs-up. Or something else, depending on your angle."];
-    "US-GA", "Georgia", 3, ["Alabama's twin from a different mother.", "Peaches, and a border that gave up halfway down."];
-    "US-HI", "Hawaii", 1, ["A state you need a boat to visit all of.", "The only state that's mostly volcano by volume."];
-    "US-ID", "Idaho", 1, ["A pistol, a boot, or a chair, depending on how much you've had to drink.", "The panhandle exists purely to annoy Montana."];
-    "US-IL", "Illinois", 3, ["Indiana with a bit more wobble on the left.", "Chicago and a lot of corn, shaped like a dropped ice cream."];
-    "US-IN", "Indiana", 3, ["Illinois, but someone used a ruler.", "Looks like a phone with a cracked bottom."];
-    "US-IA", "Iowa", 3, ["A rectangle with river damage on both sides.", "So flat the outline is the most interesting thing about it."];
-    "US-KS", "Kansas", 3, ["A rectangle that took a bite out of its top-right corner.", "Literally flatter than a pancake. That's been measured."];
-    "US-KY", "Kentucky", 2, ["Looks like a duck going backwards, or Victoria. Mostly Victoria.", "Has a tiny chunk stranded in a river loop. Truly committed."];
-    "US-LA", "Louisiana", 1, ["A boot that's been left out in the rain too long.", "Half state, half swamp, all bayou fringe."];
-    "US-ME", "Maine", 2, ["A mitten made entirely of coastline.", "Like New Hampshire, if New Hampshire ate well."];
-    "US-MD", "Maryland", 2, ["Looks like someone tried to cut out a state and sneezed.", "A shape so chaotic it should come with a warning label."];
-    "US-MA", "Massachusetts", 2, ["Flexing its little Cape Cod arm at the Atlantic.", "A rectangle that grew a hook."];
-    "US-MI", "Michigan", 1, ["The mitten. Plus a second, bonus bit nobody asked about.", "The only state that gives directions with its hand."];
-    "US-MN", "Minnesota", 2, ["A square with an arm reaching for Lake Superior.", "Contains a weird little chimney up top that technically belongs to Canada's problem."];
-    "US-MS", "Mississippi", 3, ["Alabama in a mirror. Only the left edge gives it away.", "Four S's, four I's, two P's, one identity crisis with Alabama."];
-    "US-MO", "Missouri", 3, ["Has a bootheel. Not to be confused with the other boot, or Arkansas.", "A square that melted on the right."];
-    "US-MT", "Montana", 2, ["A rectangle someone sat on from the left.", "Big Sky Country. Big, vague shape."];
-    "US-NE", "Nebraska", 3, ["Like Kansas, but with a little chimney on the left.", "A panhandle state, for people who enjoy saying panhandle."];
-    "US-NV", "Nevada", 1, ["California's other half, the one with all the casinos.", "A cheese wedge with a gambling problem."];
-    "US-NH", "New Hampshire", 3, ["Vermont, upside down. Seriously, check.", "Has about 13 miles of coastline and won't stop talking about it."];
-    "US-NJ", "New Jersey", 2, ["A seahorse with attitude.", "Shaped like it's about to start an argument."];
-    "US-NM", "New Mexico", 3, ["A square with a little step at the bottom, like it's about to go downstairs.", "Not new, and not Mexico."];
-    "US-NY", "New York", 2, ["A state with a long island poking out the bottom like a tongue.", "Mostly not the city, despite what the city thinks."];
-    "US-NC", "North Carolina", 2, ["A wedge with a ragged coastal fringe.", "The Outer Banks are just the state's eyelashes."];
-    "US-ND", "North Dakota", 3, ["A rectangle. Next.", "South Dakota's upstairs neighbour."];
-    "US-OH", "Ohio", 2, ["A heart, if you squint and really love Ohio.", "Round on the ends and hi in the middle."];
-    "US-OK", "Oklahoma", 1, ["A frying pan, handle and all.", "Texas's hat."];
-    "US-OR", "Oregon", 2, ["Washington's quieter cousin, slightly more square.", "Its top border is a river and that's its personality."];
-    "US-PA", "Pennsylvania", 2, ["A rectangle with a frilly right side and a tiny notch on top.", "Has a chimney poking up to Lake Erie."];
-    "US-RI", "Rhode Island", 3, ["Not an island. Barely a state. Love it.", "Mostly bay. Fit it in your pocket."];
-    "US-SC", "South Carolina", 2, ["An upside-down triangle with a frilly coast.", "North Carolina's snack-sized sibling."];
-    "US-SD", "South Dakota", 3, ["North Dakota, but the bottom right melted.", "A rectangle with a dented corner."];
-    "US-TN", "Tennessee", 1, ["A parallelogram that tripped on the way in.", "Long, thin, and full of country music."];
-    "US-TX", "Texas", 1, ["Everything's bigger in Texas, including the ego.", "So recognisable it's on the belt buckles."];
-    "US-UT", "Utah", 1, ["A square with a bite taken out by Wyoming.", "Colorado with a corner missing."];
-    "US-VT", "Vermont", 3, ["New Hampshire flipped. They know. They're not happy.", "Shaped like a slice of pie someone fumbled."];
-    "US-VA", "Virginia", 2, ["A triangle with a tail flicking into the bay.", "Looks a bit like Kentucky got lost in the Atlantic."];
-    "US-WA", "Washington", 2, ["A square with a jigsaw nibble out of the top-left.", "Wet, green, and full of coffee."];
-    "US-WV", "West Virginia", 2, ["Shaped like a squashed octopus waving both arms.", "Has two panhandles. Greedy."];
-    "US-WI", "Wisconsin", 2, ["A mitten for the other hand, held next to Michigan's.", "Has a thumb poking into Lake Michigan."];
-    "US-WY", "Wyoming", 3, ["A perfect rectangle. Or Colorado. Nobody knows.", "Does Wyoming exist? The evidence is thin."];
-    "AU-NSW", "New South Wales", 2, ["Australia's most populated slice, shaped like a bitten sandwich.", "Comes with the ACT sitting in it like a stone in a shoe."];
-    "AU-VIC", "Victoria", 2, ["Also known as 'basically Kentucky'.", "Small, wedge-shaped, and will tell you about the coffee."];
-    "AU-QLD", "Queensland", 2, ["Shaped like a giant pointing finger. That's Cape York.", "Big, hot, and full of things that want to hurt you."];
-    "AU-SA", "South Australia", 3, ["A big box with two bites out of the bottom.", "The Bight is what happens when a state gets hangry."];
-    "AU-WA", "Western Australia", 2, ["One third of a continent and still drawn as a big lump.", "Big enough to swallow Texas several times. Ask Texas."];
-    "AU-TAS", "Tasmania", 1, ["The island everyone forgets until they need a map.", "Australia's little shield, hanging off the bottom."];
-    "AU-NT", "Northern Territory", 3, ["A rectangle with a beard of mangroves.", "Not a state. Shaped like a state. Pretending."];
-    "AU-ACT", "Australian Capital Territory", 3, ["A blob around Canberra. That's it. That's the territory.", "Small, oddly shaped, mostly public servants."];
-}
-
-/// Look-alike groups. Overlapping on purpose: a state's decoys come from any
-/// group it's in, so the same answer gets different traps game to game.
+/// Look-alike groups live in content.rs; a state's decoys come from every group it's in.
 pub struct Group {
     pub members: &'static [&'static str],
     pub titles: &'static [&'static str],
 }
-
-pub static GROUPS: &[Group] = &[
-    Group { members: &["US-CO", "US-WY", "US-ND", "US-SD", "US-KS"], titles: &["🟥 The Rectangle Round", "Four Corners, Zero Clues", "Squares Are Hard, Actually"] },
-    Group { members: &["US-CO", "US-WY", "US-UT", "AU-NT"], titles: &["Boxes of the World", "The Great Rectangle Confusion"] },
-    Group { members: &["US-ND", "US-SD", "US-MT", "US-NE"], titles: &["The Flat Lands", "Prairie Lineup"] },
-    Group { members: &["US-KS", "US-NE", "US-OK", "US-IA"], titles: &["Panhandle Panic", "Corn Belt Confusion"] },
-    Group { members: &["US-VT", "US-NH", "US-ME"], titles: &["🪞 Mirror, Mirror", "Upside Down New England", "Which Way Is Up?"] },
-    Group { members: &["US-VT", "US-NH", "US-AL", "US-MS"], titles: &["🪞 Evil Twins", "Flip It and Reverse It"] },
-    Group { members: &["US-AL", "US-MS", "US-GA", "AU-NT"], titles: &["The Tall Skinny Ones", "Deep South, Deep Confusion"] },
-    Group { members: &["US-AL", "US-MS", "US-IN", "US-IL"], titles: &["Tall and Indistinct", "Vertical Rectangles With Ambitions"] },
-    Group { members: &["US-IL", "US-IN", "US-OH"], titles: &["Midwest Mess", "Ohio, Indiana, Who Cares?"] },
-    Group { members: &["US-AR", "US-MO", "US-IA", "US-PA"], titles: &["River-Bitten Rectangles", "Ragged Right Edges"] },
-    Group { members: &["US-AZ", "US-NM", "US-NV", "US-UT", "US-CO"], titles: &["Desert Boxes", "Four Corners Showdown"] },
-    Group { members: &["US-AZ", "US-NM", "AU-SA"], titles: &["Hot Rectangles", "Sunburnt Squares"] },
-    Group { members: &["US-KY", "US-TN", "US-VA", "US-NC", "AU-VIC"], titles: &["🦘 Wedge Week", "Is It Kentucky Or Victoria?", "The Sideways Slices"] },
-    Group { members: &["US-KY", "US-VA", "US-WV", "AU-VIC"], titles: &["Appalachian Arrowheads", "Pointy Bits"] },
-    Group { members: &["US-WA", "US-OR", "US-MT", "US-ID"], titles: &["Pacific North-Confusing", "The Wet Corner"] },
-    Group { members: &["US-CT", "US-RI", "US-DE", "AU-ACT"], titles: &["🔍 The Tiny Ones", "Microstates", "Zoomed Way In"] },
-    Group { members: &["US-CT", "US-MA", "US-RI", "US-NJ"], titles: &["Northeast Corridor Chaos", "Commuter Belt"] },
-    Group { members: &["AU-WA", "AU-SA", "AU-NT", "AU-QLD"], titles: &["🦘 Straight Lines Down Under", "Drawn With a Ruler, Mate", "Outback Geometry"] },
-    Group { members: &["AU-NSW", "AU-VIC", "AU-QLD", "AU-SA"], titles: &["🦘 Eastern Seaboard Scramble", "Mate, Which One?"] },
-    Group { members: &["AU-NSW", "US-SC", "US-NC", "AU-VIC"], titles: &["Coastal Wedges", "Pacific vs Atlantic"] },
-    Group { members: &["AU-QLD", "US-ID", "US-NV"], titles: &["Pointy Tops", "The Finger Round"] },
-    Group { members: &["AU-WA", "US-CA", "US-OR", "AU-SA"], titles: &["West Coast Best Coast", "Sunsets Over the Ocean"] },
-    Group { members: &["AU-TAS", "US-HI", "US-RI"], titles: &["Island Life", "Not Attached To Anything"] },
-    Group { members: &["US-MN", "US-WI", "US-MI"], titles: &["Great Lakes, Mediocre Guesses", "Mitten Season"] },
-    Group { members: &["US-MD", "US-WV", "US-VA", "US-DE"], titles: &["The Chaos Shapes", "Who Drew These?"] },
-    Group { members: &["US-NY", "US-PA", "US-NJ", "US-VT"], titles: &["Empire State of Confusion", "Mid-Atlantic Muddle"] },
-    Group { members: &["US-SC", "US-NC", "US-GA", "US-AL"], titles: &["Southern Comfort", "Y'all Better Know This"] },
-    Group { members: &["US-LA", "US-MS", "US-AR"], titles: &["Bayou Business", "Mississippi River Meets Mississippi State"] },
-    Group { members: &["US-OK", "US-TX", "US-NE", "US-ID"], titles: &["Handle With Care", "Panhandles Assemble"] },
-];
-
-pub static EASY_TITLES: &[&str] = &[
-    "Warm-up Lap", "A Freebie", "Even Your Nan Knows This", "Gimme", "Confidence Builder",
-    "Don't Overthink It", "Free Points (Probably)", "Training Wheels", "Baby Steps",
-];
-pub static MEDIUM_TITLES: &[&str] = &[
-    "Getting Warmer", "Now We're Talking", "Hmm.", "Bit Trickier", "Squint a Little",
-    "Medium Rare", "Trust Your Gut", "Not As Easy As It Looks",
-];
-pub static HARD_TITLES: &[&str] = &[
-    "Good Luck", "Absolutely Brutal", "This One's Personal", "Geography Teachers Only",
-    "We're Sorry In Advance", "No Hints", "Pure Vibes", "Big Brain Time",
-];
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -152,8 +54,16 @@ pub enum Modifier {
     Double,
     /// final round: double points, double shame
     Final,
-    /// a US answer with three Aussie decoys (a free one, cheekily)
+    /// three Aussie options and one American; the answer could be either
     AussieInvasion,
+    /// spins slowly the whole round
+    Spin,
+    /// starts blurred and sharpens over the round
+    Fog,
+    /// outline only, no fill
+    Outline,
+    /// wobbles like a jelly
+    Wobble,
     /// an Aussie answer with only Aussie options
     AllAussie,
 }
@@ -173,15 +83,18 @@ pub fn by_id(id: &str) -> &'static State {
     STATES.iter().find(|s| s.id == id).unwrap_or_else(|| panic!("unknown state {id}"))
 }
 
+/// Hand-picked look-alikes (every group the state is in) plus the shapes that
+/// measure as very close (overlap 0.72+, top 3).
 fn lookalikes(id: &str) -> Vec<&'static State> {
     let mut seen = HashSet::new();
-    GROUPS
+    let curated = GROUPS
         .iter()
         .filter(|g| g.members.contains(&id))
         .flat_map(|g| g.members.iter())
-        .filter(|m| **m != id && seen.insert(**m))
-        .map(|m| by_id(m))
-        .collect()
+        .filter(|m| **m != id)
+        .map(|m| by_id(m));
+    let measured = similar(id).into_iter().take(3).filter(|(_, s)| *s >= 0.72).map(|(st, _)| st);
+    curated.chain(measured).filter(|s| seen.insert(s.id)).collect()
 }
 
 struct Slot {
@@ -231,15 +144,20 @@ pub fn game(rounds: usize) -> Vec<Question> {
             last_mod = false;
             continue;
         }
-        let roll: f64 = rng.random();
-        s.modifier = match (s.au, s.tier) {
-            (_, t) if roll < 0.12 && t >= 2 => Modifier::DownUnder,
-            (_, t) if roll < 0.20 && t >= 2 => Modifier::Tilt,
-            _ if roll < 0.28 => Modifier::Double,
-            (false, t) if roll < 0.36 && t <= 2 => Modifier::AussieInvasion,
-            (true, _) if roll < 0.42 => Modifier::AllAussie,
-            _ => Modifier::None,
-        };
+        // about two in five rounds get a twist; the visual ones only once it's not too early
+        let mut pool: Vec<(Modifier, u32)> = vec![(Modifier::None, 50), (Modifier::Double, 7)];
+        if i >= 3 {
+            pool.extend([(Modifier::DownUnder, 6), (Modifier::Tilt, 6), (Modifier::Spin, 5), (Modifier::Fog, 6), (Modifier::Outline, 6), (Modifier::Wobble, 5)]);
+        }
+        if s.tier <= 2 {
+            pool.push((Modifier::AussieInvasion, 6));
+        }
+        if s.au {
+            pool.push((Modifier::AllAussie, 8));
+        }
+        let total: u32 = pool.iter().map(|p| p.1).sum();
+        let mut roll = rng.random_range(0..total);
+        s.modifier = pool.iter().find(|(_, w)| { let hit = roll < *w; roll = roll.saturating_sub(*w); hit }).unwrap().0;
         last_mod = s.modifier != Modifier::None;
     }
 
@@ -262,6 +180,7 @@ fn question(slot: &Slot, used: &mut HashSet<&'static str>, rng: &mut impl rand::
     used.insert(answer.id);
 
     let looks = lookalikes(answer.id);
+    let sim = similar(answer.id); // everyone else, most alike first
     let mut options: Vec<&'static State> = vec![answer];
     // add random picks from `from` until there are `upto` options
     let take = |options: &mut Vec<&'static State>, from: &[&'static State], upto: usize, rng: &mut dyn rand::Rng| {
@@ -270,52 +189,64 @@ fn question(slot: &Slot, used: &mut HashSet<&'static str>, rng: &mut impl rand::
         let k = upto.saturating_sub(options.len());
         options.extend(from.into_iter().take(k));
     };
-    let others: Vec<&'static State> = STATES
-        .iter()
-        .filter(|s| s.id != answer.id && !looks.iter().any(|l| l.id == s.id))
-        .collect();
-    let aussies: Vec<&'static State> = STATES.iter().filter(|s| s.au()).collect();
+    let ranked = |f: &dyn Fn(&State) -> bool, from: usize, to: usize| -> Vec<&'static State> {
+        sim.iter().map(|(s, _)| *s).filter(|s| f(s)).skip(from).take(to - from).collect()
+    };
+    let not_look = |s: &State| !looks.iter().any(|l| l.id == s.id);
+    // the closest-looking Aussies, for when an Aussie has to be there anyway
+    let close_aussies = ranked(&|s| s.au(), 0, 4);
 
     match slot.modifier {
-        Modifier::AussieInvasion if !answer.au() => take(&mut options, &aussies, 4, rng),
-        Modifier::AllAussie if answer.au() => {
-            let au_looks: Vec<_> = looks.iter().filter(|s| s.au()).copied().collect();
-            take(&mut options, &au_looks, 3, rng);
-            take(&mut options, &aussies, 4, rng);
+        Modifier::AussieInvasion if !answer.au() => take(&mut options, &close_aussies, 4, rng),
+        Modifier::AussieInvasion => {
+            // an Aussie answer with two Aussie decoys and the most confusable American
+            take(&mut options, &close_aussies, 3, rng);
+            take(&mut options, &ranked(&|s| !s.au(), 0, 3), 4, rng);
         }
-        _ => {
-            let n_looks: usize = match answer.tier.max(slot.tier) {
-                1 => 0,
-                2 => rng.random_range(1..=2),
-                _ => 3,
-            };
-            // hard rounds: lead with one group so the trap is coherent
-            if n_looks == 3 {
+        Modifier::AllAussie if answer.au() => take(&mut options, &close_aussies, 4, rng),
+        _ => match answer.tier.max(slot.tier) {
+            // easy: decoys that look nothing like it
+            1 => {
+                let n = sim.len();
+                take(&mut options, &ranked(&not_look, n / 2, n), 4, rng);
+            }
+            // medium: one or two real traps, the rest at least vaguely similar
+            2 => {
+                let k: usize = rng.random_range(1..=2);
+                take(&mut options, &looks, 1 + k, rng);
+                take(&mut options, &ranked(&not_look, 2, 18), 4, rng);
+            }
+            // hard: lead with one hand-picked group so the trap is coherent,
+            // then the measured closest shapes
+            _ => {
                 let gs: Vec<_> = GROUPS.iter().filter(|g| g.members.contains(&answer.id)).collect();
                 if let Some(g) = gs.choose(rng) {
                     let members: Vec<_> = g.members.iter().map(|m| by_id(m)).collect();
-                    take(&mut options, &members, 4, rng);
+                    take(&mut options, &members, 3, rng);
                 }
+                take(&mut options, &looks, 4, rng);
+                take(&mut options, &ranked(&|_| true, 0, 8), 4, rng);
             }
-            take(&mut options, &looks, 1 + n_looks, rng);
-            // easy rounds keep the decoys obviously different
-            let filler = if slot.tier == 1 { &others } else { &STATES.iter().collect::<Vec<_>>() };
-            take(&mut options, filler, 4, rng);
-        }
+        },
     }
 
     // The Aussie rule: there is always an Aussie option, and an Aussie answer
-    // always has Aussie company (at least two more).
+    // always has Aussie company (at least two more). The Aussie brought in is
+    // usually one of the closest-looking, so it's a trap, not a freebie.
     let want_au = if answer.au() { 3 } else { 1 };
     while options.iter().filter(|s| s.au()).count() < want_au {
-        let pos = options.iter().rposition(|s| !s.au() && s.id != answer.id).unwrap();
-        let free = |from: &[&'static State]| -> Vec<&'static State> {
-            from.iter().filter(|s| s.au() && !options.iter().any(|o| o.id == s.id)).copied().collect()
-        };
-        // an Aussie look-alike makes the best trap; otherwise any Aussie will do
-        let (traps, any) = (free(&looks), free(&aussies));
-        let from = if !traps.is_empty() && rng.random_bool(0.7) { traps } else { any };
-        options[pos] = from.choose(rng).unwrap();
+        // replace the least convincing non-Aussie decoy
+        let score = |id: &str| sim.iter().find(|(s, _)| s.id == id).map_or(0.0, |x| x.1);
+        let pos = (0..options.len())
+            .filter(|&i| !options[i].au() && options[i].id != answer.id)
+            .min_by(|&a, &b| score(options[a].id).total_cmp(&score(options[b].id)))
+            .unwrap();
+        let mut free: Vec<_> = ranked(&|s| s.au() && !options.iter().any(|o| o.id == s.id), 0, 8);
+        if answer.tier.max(slot.tier) == 1 {
+            free.reverse(); // easy rounds want the least alike
+        }
+        let top = &free[..free.len().min(2)];
+        options[pos] = if rng.random_bool(0.75) { top.choose(rng) } else { free.choose(rng) }.copied().unwrap();
     }
     options.shuffle(rng);
 
@@ -331,28 +262,35 @@ fn question(slot: &Slot, used: &mut HashSet<&'static str>, rng: &mut impl rand::
 
 fn title(slot: &Slot, answer: &State, options: &[&State], rng: &mut impl rand::Rng) -> String {
     let pick = |xs: &[&str], rng: &mut dyn rand::Rng| xs.choose(rng).unwrap().to_string();
-    match slot.modifier {
-        Modifier::DownUnder => return pick(&["🙃 Down Under Round: shown the right way up, for once", "🙃 Australian Orientation", "🙃 Flipped. Deal with it."], rng),
-        Modifier::Tilt => return pick(&["📐 Tilted. Someone bumped the table.", "📐 Slightly Wonky", "📐 Head-Tilt Required"], rng),
-        Modifier::Double => return pick(&["✨ Double Points", "✨ Twice the Points, Twice the Shame", "✨ Bonus Round"], rng),
-        Modifier::Final => return pick(&["🏁 Final Round: double points", "🏁 Last Chance (Double Points)", "🏁 Everything On This One"], rng),
-        Modifier::AussieInvasion => return pick(&["🦘 Aussie Invasion", "🦘 Spot the Yank", "🦘 Mostly Kangaroos"], rng),
-        Modifier::AllAussie => return pick(&["🦘 All-Aussie Round", "🦘 Strewth, Mate", "🦘 G'day, Pick One"], rng),
-        Modifier::None => {}
+    let pool = match slot.modifier {
+        Modifier::DownUnder => c::DOWN_UNDER_TITLES,
+        Modifier::Tilt => c::TILT_TITLES,
+        Modifier::Spin => c::SPIN_TITLES,
+        Modifier::Fog => c::FOG_TITLES,
+        Modifier::Outline => c::OUTLINE_TITLES,
+        Modifier::Wobble => c::WOBBLE_TITLES,
+        Modifier::Double => c::DOUBLE_TITLES,
+        Modifier::Final => c::FINAL_TITLES,
+        Modifier::AussieInvasion => c::INVASION_TITLES,
+        Modifier::AllAussie => c::ALL_AUSSIE_TITLES,
+        Modifier::None => &[],
+    };
+    if !pool.is_empty() {
+        return pick(pool, rng);
     }
-    // a hard round whose options mostly share a group gets that group's name
+    // a hard round whose options mostly share a group gets one of that group's titles
     if slot.tier == 3 {
         let best = GROUPS
             .iter()
             .filter(|g| g.members.contains(&answer.id))
             .max_by_key(|g| options.iter().filter(|o| g.members.contains(&o.id)).count());
         if let Some(g) = best {
-            if options.iter().filter(|o| g.members.contains(&o.id)).count() >= 3 {
+            if options.iter().filter(|o| g.members.contains(&o.id)).count() >= 3 && rng.random_bool(0.7) {
                 return pick(g.titles, rng);
             }
         }
     }
-    pick(match slot.tier { 1 => EASY_TITLES, 2 => MEDIUM_TITLES, _ => HARD_TITLES }, rng)
+    pick(match slot.tier { 1 => c::EASY_TITLES, 2 => c::MEDIUM_TITLES, _ => c::HARD_TITLES }, rng)
 }
 
 /// Lines for the reveal: who fell for what, who was fast, streaks, lead changes.
@@ -368,82 +306,75 @@ pub struct RoundFacts<'a> {
 
 pub fn quips(f: &RoundFacts) -> Vec<String> {
     let mut rng = rand::rng();
-    let st = f.state.name;
-    let fill = |t: &str, name: &str, pick: &str| t.replace("{state}", st).replace("{name}", name).replace("{pick}", pick);
-    let mut lines: Vec<(u8, String)> = vec![]; // (priority, line)
+    let mut used: HashSet<&str> = HashSet::new();
+    let mut lines: Vec<(u8, String)> = vec![]; // (priority, line); lower shows first
+    // a random line from a pool, never one already used in this reveal, filled in
+    let mut say = |prio: u8, pool: &'static [&'static str], name: &str, pick: &str, num: &str| {
+        let fresh: Vec<&&str> = pool.iter().filter(|x| !used.contains(**x)).collect();
+        let line: &str = fresh.choose(&mut rng).map_or(pool[0], |l| **l);
+        used.insert(line);
+        let text = line.replace("{state}", f.state.name).replace("{name}", name).replace("{pick}", pick)
+            .replace("{s}", num).replace("{n}", num);
+        // "A and B all said..." reads badly; two people are "both"
+        let text = if name.contains(" and ") && !name.contains(", ") { text.replacen(" all ", " both ", 1) } else { text };
+        lines.push((prio, text));
+    };
 
+    let right: Vec<&(String, Option<&State>, f64)> =
+        f.picks.iter().filter(|(_, p, _)| p.is_some_and(|p| p.id == f.state.id)).collect();
     if f.nobody_right && !f.picks.is_empty() {
-        let t = [
-            "Nobody. Not a single one of you.", "Zero correct. {state} is filing a complaint.",
-            "A clean sweep of wrongness.", "{state} has never felt so invisible.",
-            "Wow. {state} will remember this.", "Not one. Geography teachers everywhere just felt a chill.",
-        ];
-        lines.push((0, fill(t.choose(&mut rng).unwrap(), "", "")));
+        say(0, c::NOBODY, "", "", "");
     }
     if f.everyone_right && f.picks.len() > 1 {
-        let t = [
-            "Everyone got it. Boring. Harder ones coming. 😈", "Unanimous. Suspicious, honestly.",
-            "Too easy? Noted.", "The hive mind has spoken correctly, for once.", "Full marks all round. Enjoy it, it won't last.",
-        ];
-        lines.push((0, t.choose(&mut rng).unwrap().to_string()));
+        say(0, c::EVERYONE, "", "", "");
     }
+    if right.len() == 1 && f.picks.len() > 2 {
+        say(0, c::SOLO_RIGHT, &right[0].0, "", "");
+    }
+
     // one line per wrong answer, naming everyone who gave it
-    let mut groups: Vec<(Option<&State>, Vec<&str>)> = vec![];
+    let mut wrong: Vec<(Option<&State>, Vec<&str>)> = vec![];
     for (name, pick, _) in &f.picks {
         if pick.is_some_and(|p| p.id == f.state.id) {
             continue;
         }
-        match groups.iter_mut().find(|(p, _)| p.map(|p| p.id) == pick.map(|p| p.id)) {
+        match wrong.iter_mut().find(|(p, _)| p.map(|p| p.id) == pick.map(|p| p.id)) {
             Some((_, names)) => names.push(name),
-            None => groups.push((*pick, vec![name])),
+            None => wrong.push((*pick, vec![name])),
         }
     }
-    let mut used: HashSet<&str> = HashSet::new();
-    for (pick, names) in groups {
+    let looks = lookalikes(f.state.id);
+    for (pick, names) in wrong {
         let many = names.len() > 1;
-        let who = join_names(&names);
-        let (prio, t): (u8, &[&str]) = match pick {
-            None if many => (3, &["{name} didn't answer. Group nap?", "{name} all timed out. Solidarity.", "{name}: silence. Powerful stuff."]),
-            None => (3, &["{name} didn't answer. Thinking hard, or sleeping?", "{name} timed out. Respect the indecision.", "{name} chose silence. Powerful.", "{name} went to make a cuppa, apparently."]),
-            Some(p) if p.au() && !f.state.au() && many => (1, &["{name} all said {pick}. That's the other side of the planet.", "{name} went with {pick}. Mates.", "{name} all think {state} is in Australia. Bold.", "{name}: {pick}. Wrong hemisphere, the lot of you."]),
-            Some(p) if p.au() && !f.state.au() => (1, &["{name} said {pick}. That's the other side of the planet.", "{name} went with {pick}. Mate.", "{name} thinks {state} is in Australia. Bold.", "{name} answered {pick}. Wrong hemisphere, champ.", "{name} picked {pick}. The kangaroos thank you for your support."]),
-            Some(p) if !p.au() && f.state.au() && many => (1, &["{name} all said {pick}. Not even the right continent.", "{name} picked {pick}. The koalas are disappointed in all of you.", "{name} reckon {state} is American. Strewth."]),
-            Some(p) if !p.au() && f.state.au() => (1, &["{name} said {pick}. Not even the right continent.", "{name} picked {pick}. The koalas are disappointed.", "{name} reckons {state} is American. Strewth.", "{name} went with {pick}. Someone get them an atlas."]),
-            Some(p) if lookalikes(f.state.id).iter().any(|l| l.id == p.id) && many => (2, &["{name} all fell for {pick}. Classic trap.", "{name} picked {pick}. Honestly? Fair.", "{name} walked into the {pick} trap together. Touching."]),
-            Some(_) if many => (2, &["{name} all said {pick}. Group project energy.", "{name} went {pick}. Confidently, collectively wrong."]),
-            Some(p) if lookalikes(f.state.id).iter().any(|l| l.id == p.id) => (2, &["{name} fell for {pick}. Classic trap.", "{name} picked {pick}. Honestly? Fair.", "{name} said {pick}. We built that trap just for you.", "{pick}, {name}? So close, and yet."]),
-            Some(_) => (2, &["{name} said {pick}. Interesting choice.", "{name} picked {pick}. Was that a guess? That was a guess.", "{name} went {pick}. Bold strategy."]),
+        let (prio, pool) = match pick {
+            None => (3, if many { c::NO_ANSWER_MANY } else { c::NO_ANSWER }),
+            Some(p) if p.au() && !f.state.au() => (1, if many { c::AU_FOR_US_MANY } else { c::AU_FOR_US }),
+            Some(p) if !p.au() && f.state.au() => (1, if many { c::US_FOR_AU_MANY } else { c::US_FOR_AU }),
+            Some(p) if looks.iter().any(|l| l.id == p.id) => (2, if many { c::TRAP_MANY } else { c::TRAP }),
+            Some(_) => (2, if many { c::WILD_MANY } else { c::WILD }),
         };
-        // don't tell the same joke twice in one reveal
-        let fresh: Vec<&&str> = t.iter().filter(|x| !used.contains(*x)).collect();
-        let line = **fresh.choose(&mut rng).unwrap_or(&&t[0]);
-        used.insert(line);
-        lines.push((prio, fill(line, &who, pick.map_or("", |p| p.name))));
+        say(prio, pool, &join_names(&names), pick.map_or("", |p| p.name), "");
     }
-    if let Some((name, _, secs)) = f
-        .picks
-        .iter()
-        .filter(|(_, p, _)| p.map(|p| p.id) == Some(f.state.id))
-        .min_by(|a, b| a.2.total_cmp(&b.2))
-    {
-        if f.picks.len() > 1 {
-            let t = ["{name} got it in {s}s. Showoff.", "Fastest finger: {name} ({s}s).", "{name}: {s}s, like they'd been waiting all day.", "{name} clocked {s}s. Calm down."];
-            lines.push((2, fill(t.choose(&mut rng).unwrap(), name, "").replace("{s}", &format!("{secs:.1}"))));
+
+    if right.len() > 1 {
+        let fast = right.iter().min_by(|a, b| a.2.total_cmp(&b.2)).unwrap();
+        say(2, c::FASTEST, &fast.0, "", &format!("{:.1}", fast.2));
+        let slow = right.iter().max_by(|a, b| a.2.total_cmp(&b.2)).unwrap();
+        let left = crate::lobby::QUESTION_SECS as f64 - slow.2;
+        if left < 3.0 {
+            say(2, c::BUZZER, &slow.0, "", &format!("{left:.1}"));
         }
     }
     for (name, n) in &f.streaks {
-        let t = ["{name} is on a {n}-streak 🔥", "{name}: {n} in a row. Someone stop them.", "{n} straight for {name}. Insufferable."];
-        lines.push((1, fill(t.choose(&mut rng).unwrap(), name, "").replace("{n}", &n.to_string())));
+        say(1, c::STREAK, name, "", &n.to_string());
     }
     for (name, n) in &f.broken {
-        let t = ["{name}'s {n}-streak dies here. RIP. 🪦", "And {name}'s {n}-streak is over. Tragic.", "{name} was on {n} in a row. Was."];
-        lines.push((1, fill(t.choose(&mut rng).unwrap(), name, "").replace("{n}", &n.to_string())));
+        say(1, c::BROKEN, name, "", &n.to_string());
     }
     if let Some(name) = &f.new_leader {
-        let t = ["{name} takes the lead! 👑", "New leader: {name}. Enjoy it while it lasts.", "{name} is top of the table. For now."];
-        lines.push((0, fill(t.choose(&mut rng).unwrap(), name, "")));
+        say(0, c::LEADER, name, "", "");
     }
-    lines.shuffle(&mut rng);
+    lines.shuffle(&mut rand::rng());
     lines.sort_by_key(|l| l.0);
     lines.into_iter().take(4).map(|l| l.1).collect()
 }
@@ -457,20 +388,15 @@ fn join_names(names: &[&str]) -> String {
 }
 
 pub fn winner_line(name: &str) -> String {
-    let t = [
-        "{name} wins. They will not shut up about this.", "{name} is the State Champion. Of shapes.",
-        "All hail {name}, ruler of outlines.", "{name} wins! Somewhere, a geography teacher sheds a tear of joy.",
-        "{name} takes it. Frame this moment.",
-    ];
-    t.choose(&mut rand::rng()).unwrap().replace("{name}", name)
+    c::WINNER.choose(&mut rand::rng()).unwrap().replace("{name}", name)
 }
 
 pub fn loser_line(name: &str) -> String {
-    let t = [
-        "{name} came last. A map on the fridge might help.", "{name}: last place, first in our hearts.",
-        "{name} finishes dead last. Wyoming understands.", "{name} came last. Tasmania would have been a safe guess, just saying.",
-    ];
-    t.choose(&mut rand::rng()).unwrap().replace("{name}", name)
+    c::LOSER.choose(&mut rand::rng()).unwrap().replace("{name}", name)
+}
+
+pub fn roast(state: &State) -> &'static str {
+    state.roasts.choose(&mut rand::rng()).unwrap()
 }
 
 #[cfg(test)]
@@ -512,6 +438,63 @@ mod tests {
         }
     }
 
+    /// Titles show before anyone answers, so no place names, nicknames,
+    /// regions or country hints (Aussie words only on the Aussie modifiers,
+    /// whose options already say it).
+    #[test]
+    fn titles_never_give_it_away() {
+        let mut banned: Vec<String> = STATES
+            .iter()
+            .flat_map(|s| s.name.split(' '))
+            .map(|w| w.to_lowercase())
+            .collect();
+        banned.extend(
+            [
+                "america", "usa", "yank", "states", "united", "empire", "bayou", "peach", "lone star", "sunshine", "golden",
+                "aloha", "garden", "keystone", "granite", "green mountain", "pine", "prairie", "corn", "desert", "lake",
+                "gulf", "pacific", "atlantic", "coast", "seaboard", "midwest", "south", "north", "east", "west", "appalachian",
+                "outback", "bight", "cowboy", "canyon", "river", "rocky", "mitten", "boot", "heel", "dixie", "y'all",
+                "corridor", "belt", "plains", "four corners", "great", "big sky", "cape", "sound", "bay", "aussie",
+                "australia", "down under", "kangaroo", "roo", "🦘", "mate", "strewth", "g'day", "dinkum", "crikey",
+                "koala", "emu", "wombat", "vegemite", "outback", "tropic", "island", "peninsula", "volcano", "wine",
+            ]
+            .map(String::from),
+        );
+        let aussie_ok = ["aussie", "australia", "kangaroo", "roo", "🦘", "mate", "strewth", "g'day", "dinkum", "crikey", "yank"];
+        let bad = std::cell::RefCell::new(vec![]);
+        let check = |title: &str, allow_aussie: bool| {
+            let t = format!(" {} ", title.to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '\'' && c != '🦘', " "));
+            for b in &banned {
+                if allow_aussie && aussie_ok.contains(&b.as_str()) {
+                    continue;
+                }
+                let hit = if b.chars().all(|c| c.is_alphanumeric() || c == ' ' || c == '\'') { t.contains(&format!(" {b} ")) } else { t.contains(b.as_str()) };
+                if hit {
+                    bad.borrow_mut().push(format!("{title:?} gives away {b:?}"));
+                }
+            }
+        };
+        for g in GROUPS {
+            g.titles.iter().for_each(|t| check(t, false));
+        }
+        for pool in [c::EASY_TITLES, c::MEDIUM_TITLES, c::HARD_TITLES, c::DOWN_UNDER_TITLES, c::TILT_TITLES, c::SPIN_TITLES,
+            c::FOG_TITLES, c::OUTLINE_TITLES, c::WOBBLE_TITLES, c::DOUBLE_TITLES, c::FINAL_TITLES] {
+            pool.iter().for_each(|t| check(t, false));
+        }
+        for pool in [c::INVASION_TITLES, c::ALL_AUSSIE_TITLES] {
+            pool.iter().for_each(|t| check(t, true));
+        }
+        let bad = bad.into_inner();
+        assert!(bad.is_empty(), "titles that give it away:\n{}", bad.join("\n"));
+    }
+
+    #[test]
+    fn plenty_of_roasts() {
+        for s in STATES {
+            assert!(s.roasts.len() >= 5, "{} has {} roasts", s.id, s.roasts.len());
+        }
+    }
+
     #[test]
     fn shapes_cover_every_state() {
         let shapes: serde_json::Value = serde_json::from_str(include_str!("../web/shapes.json")).unwrap();
@@ -523,6 +506,77 @@ mod tests {
 
 #[cfg(test)]
 mod sample {
+    use std::collections::{HashMap, HashSet};
+
+    /// `cargo test variety -- --ignored --nocapture`: how much there is to see
+    /// How hard the decoys are: their average measured similarity to the answer, by tier.
+    #[test]
+    #[ignore]
+    fn decoy_quality() {
+        let mut sum = [0.0f64; 4];
+        let mut n = [0usize; 4];
+        let mut au_sum = 0.0;
+        let mut au_n = 0;
+        for _ in 0..20_000 {
+            for q in super::game(15) {
+                let sim = super::similar(q.answer.id);
+                for o in q.options.iter().filter(|o| o.id != q.answer.id) {
+                    let s = sim.iter().find(|(x, _)| x.id == o.id).unwrap().1;
+                    sum[q.tier as usize] += s;
+                    n[q.tier as usize] += 1;
+                    if o.au() && !q.answer.au() {
+                        au_sum += s;
+                        au_n += 1;
+                    }
+                }
+            }
+        }
+        println!("decoy similarity: easy {:.3} medium {:.3} hard {:.3} | aussie decoys on US answers {:.3}",
+            sum[1] / n[1] as f64, sum[2] / n[2] as f64, sum[3] / n[3] as f64, au_sum / au_n as f64);
+    }
+
+    #[test]
+    #[ignore]
+    fn variety() {
+        use super::c;
+        let roasts: usize = super::STATES.iter().map(|s| s.roasts.len()).sum();
+        let group_titles: usize = super::GROUPS.iter().map(|g| g.titles.len()).sum();
+        let mod_titles = [c::DOWN_UNDER_TITLES, c::TILT_TITLES, c::SPIN_TITLES, c::FOG_TITLES, c::OUTLINE_TITLES,
+            c::WOBBLE_TITLES, c::DOUBLE_TITLES, c::FINAL_TITLES, c::INVASION_TITLES, c::ALL_AUSSIE_TITLES]
+            .iter().map(|p| p.len()).sum::<usize>();
+        let quips = [c::NOBODY, c::EVERYONE, c::SOLO_RIGHT, c::NO_ANSWER, c::NO_ANSWER_MANY, c::AU_FOR_US, c::AU_FOR_US_MANY,
+            c::US_FOR_AU, c::US_FOR_AU_MANY, c::TRAP, c::TRAP_MANY, c::WILD, c::WILD_MANY, c::FASTEST, c::BUZZER,
+            c::STREAK, c::BROKEN, c::LEADER, c::WINNER, c::LOSER].iter().map(|p| p.len()).sum::<usize>();
+        println!("roasts {roasts}, group titles {group_titles}, tier titles {}, modifier titles {mod_titles}, quip templates {quips}",
+            c::EASY_TITLES.len() + c::MEDIUM_TITLES.len() + c::HARD_TITLES.len());
+
+        // distinct questions (answer + set of options + modifier) actually generated
+        let games = 200_000;
+        let mut questions = HashSet::new();
+        let mut option_sets: HashMap<&str, HashSet<Vec<&str>>> = HashMap::new();
+        let mut answer_seqs = HashSet::new();
+        let mut mods: HashMap<String, usize> = HashMap::new();
+        for _ in 0..games {
+            let g = super::game(15);
+            answer_seqs.insert(g.iter().map(|q| q.answer.id).collect::<Vec<_>>());
+            for q in &g {
+                let mut o: Vec<&str> = q.options.iter().map(|o| o.id).collect();
+                o.sort();
+                questions.insert((q.answer.id, o.clone(), format!("{:?}", q.modifier)));
+                option_sets.entry(q.answer.id).or_default().insert(o);
+                *mods.entry(format!("{:?}", q.modifier)).or_default() += 1;
+            }
+        }
+        let per_state: Vec<usize> = option_sets.values().map(|v| v.len()).collect();
+        println!("{games} games of 15: {} distinct answer orders, {} distinct questions seen",
+            answer_seqs.len(), questions.len());
+        println!("option sets per state: min {} median {} max {}",
+            per_state.iter().min().unwrap(), { let mut v = per_state.clone(); v.sort(); v[v.len() / 2] }, per_state.iter().max().unwrap());
+        let mut m: Vec<_> = mods.into_iter().collect();
+        m.sort_by(|a, b| b.1.cmp(&a.1));
+        println!("modifiers: {}", m.iter().map(|(k, v)| format!("{k} {:.1}%", 100.0 * *v as f64 / (games * 15) as f64)).collect::<Vec<_>>().join(", "));
+    }
+
     /// `cargo test sample -- --ignored --nocapture` prints a random game
     #[test]
     #[ignore]

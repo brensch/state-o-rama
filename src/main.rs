@@ -1,6 +1,7 @@
 //! state-o-rama: guess the state from its shape, with friends, against the clock.
 //! One binary: HTTP for the page, a WebSocket per player, one task per lobby.
 
+mod content;
 mod lobby;
 mod quiz;
 
@@ -22,6 +23,8 @@ static APP: &str = include_str!("../web/app.js");
 static STYLE: &str = include_str!("../web/style.css");
 static MAPS: &str = include_str!("../web/maps.json");
 static ICON: &str = include_str!("../web/icon.svg");
+/// Fredoka (SIL Open Font License, web/fonts/OFL.txt), latin subset, variable weight
+static FONT: &[u8] = include_bytes!("../web/fonts/fredoka.woff2");
 
 #[tokio::main]
 async fn main() {
@@ -34,6 +37,9 @@ async fn main() {
         .route("/app.js", get(|| async { asset("text/javascript", APP) }))
         .route("/style.css", get(|| async { asset("text/css", STYLE) }))
         .route("/maps.json", get(|| async { asset("application/json", MAPS) }))
+        .route("/fredoka.woff2", get(|| async {
+            ([(header::CONTENT_TYPE, "font/woff2"), (header::CACHE_CONTROL, "public, max-age=31536000, immutable")], FONT)
+        }))
         .route("/icon.svg", get(|| async { asset("image/svg+xml", ICON) }))
         .route("/qr/{code}", get(qr))
         .route("/healthz", get(|| async { "ok" }))
