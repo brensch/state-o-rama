@@ -3,7 +3,7 @@
 **Guess the state from its shape. With friends. Against the clock. Mostly
 American, suspiciously Australian.** 🦘
 
-### ▶ Play: [state-o-rama.brensch.com](https://state-o-rama.brensch.com)
+### ▶ Play: [states.brensch.com](https://states.brensch.com)
 
 Hit *Start a lobby*, pick a name, send the link round. Everyone sees the same
 shape at the same time and picks from four options. A round ends when everyone

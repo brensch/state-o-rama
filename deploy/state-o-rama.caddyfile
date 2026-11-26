@@ -1,5 +1,5 @@
 # state-o-rama (installed by state-o-rama's deploy/setup-vm.sh into /etc/caddy/Caddyfile.d/).
-state-o-rama.brensch.com {
+states.brensch.com {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:8050
 	header {
@@ -9,4 +9,9 @@ state-o-rama.brensch.com {
 		X-Frame-Options SAMEORIGIN
 		-Server
 	}
+}
+
+# the original name; old lobby links keep working
+state-o-rama.brensch.com {
+	redir https://states.brensch.com{uri} permanent
 }

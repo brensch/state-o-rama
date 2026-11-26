@@ -1,5 +1,5 @@
 # state-o-rama on the brensch.com box (installed by deploy/setup-vm.sh).
-# Listens on 127.0.0.1:8050; Caddy proxies state-o-rama.brensch.com to it
+# Listens on 127.0.0.1:8050; Caddy proxies states.brensch.com to it
 # (WebSockets included). No disk state: lobbies live in memory.
 [Unit]
 Description=state-o-rama
